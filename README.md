@@ -66,3 +66,15 @@ blastn -num_threads 8 -query RefSeqv1_chr7A-genes.fasta -db Axminster7A_contigs.
 3. Sort by appended column and retrieve best alignment per query based on mapping length using sortget.py:
 
 `python sortget.py -i mashmap.pi91.addlen.out -sf 10 -nf 0 -r 1 > mashmap.pi91.addlen.topq1.out`
+
+## Retrieve contigs mapping distal to a putative breakpoint based on MashMap output
+
+From the dotplot of previous MashMap output, an approximate breakpoint could be inferred around position 728000000 on chromosome 7A...
+
+1. extract only those alignments to Chr7A distal to the breakpoint:
+
+`awk '$8 >= 728000000' mashmap.out | grep Chr7A > mashmap_Chr7A.dist728mb.out`
+
+2. retrieve those contigs mapping after the breakpoint using get_contigs.py (TC-Hewitt/Misc_NGS):
+
+`python get_contigs.py -i all_contigs.fasta -o distal_mapping_contigs.fasta -t mashmap_Chr7A.dist728mb.out -s contig_`
