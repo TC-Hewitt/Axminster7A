@@ -36,19 +36,33 @@ It should be noted that this approach compared nucleotides (blastn), which was g
 `bedtools getfasta -fi RefSeqv1_chromosomes.fasta -bed RefSeqv1_chr7A-genes.gff > RefSeqv1_chr7A-genes.fasta`
 >the fasta headers will be in the form "chr7A:xxxxx-xxxxx" retaining coordinate information of gene on chr7A
 
-2. BLAST gene multifasta to Axminster 7A assembly
+2. BLAST gene multifasta to Axminster 7A assembly:
 ```
 makeblastdb -in Axminster7A_contigs.fasta -dbtype nucl
 blastn -num_threads 8 -query RefSeqv1_chr7A-genes.fasta -db Axminster7A_contigs.fasta -outfmt 6 -out 7A-genes_vs_Ax7A-contigs.blastn.txt
 ```
 
-3. Filter BLAST table by alignment length >=1000, sort by bit score, get top hit per query sequence using blast_filterV2 (TC-Hewitt/Misc_NGS)
+3. Filter BLAST table by alignment length >=1000, sort by bit score, get top hit per query sequence using blast_filterV2 (TC-Hewitt/Misc_NGS):
 
 `python blast_filterV2.pyc -i 7A-genes_vs_Ax7A-contigs.blastn.txt -o 7A-genes_vs_Ax7A-contigs.filtered.txt -a 1000 -sort1 bscore -topq 1`
 
-4. Get bscore/kb for filtered hits and reorder by query gene position along RefSeq v1.0 chr7A using hspnormalize.py
+4. Get bscore/kb for filtered hits and reorder by query gene position along RefSeq v1.0 chr7A using hspnormalize.py:
 
-python hspnormalize.py -i 7A-genes_vs_Ax7A-contigs.filtered.txt -o 7A-genes_vs_Ax7A-contigs_scored.ordered.txt
+`python hspnormalize.py -i 7A-genes_vs_Ax7A-contigs.filtered.txt -o 7A-genes_vs_Ax7A-contigs_scored.ordered.txt`
 >coordinate information from fasta headers of query sequences in 1st column of BLAST table is used for ordering, and the tabulated output has the following fields: query gene start, query alignment start, bit score, bit score/kb, subject seq ID
 
 5. columns 1 (x-axis) and 4 (y-axis) can be plotted to see change in BLAST strength along the reference chromosome 
+
+## Filter and sort MashMap output
+
+1. Extract alignments >= 91% identity:
+
+`awk '$10 >= 95' mashmap.out > mashmap.pi91.out`
+
+2. Append column to output giving the mapping length (difference of start and end coordinates):
+
+`awk '{ $11 = $4 - $3 } 1' mashmap.pi91.out | sed 's/ /\t/g' > mashmap.pi91.addlen.out`
+
+3. Sort by appended column and retrieve best alignment per query based on mapping length using sortget.py:
+
+`python sortget.py -i mashmap.pi91.addlen.out -sf 10 -nf 0 -r 1 > mashmap.pi91.addlen.topq1.out`
