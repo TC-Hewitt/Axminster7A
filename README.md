@@ -28,3 +28,28 @@ blastn -query TraesCS7D01G540500.fa -db WT_contigs.fa -outfmt 6 -out homolog_vs_
 4. From the shortlist of matching contigs, visually inspect their corresponding RenSeq alignments to see evidence of additional mutations or NLR domains that may complement the initial candidate contig.
 
 It should be noted that this approach compared nucleotides (blastn), which was good enough. However, comparing translated nucleotides (tblastn) may be a more robust approach should initial attempts return too many ambiguous matches.
+
+## Normalising BLAST bit scores and ordering alignments of IWGSC RefSeq v1.0 chr7A genes vs Axminster chr7A de novo assembled contigs
+
+1. Use bedtools/2.26.0 and chr7A gene annotation file to extract IWGSC RefSeq v1.0 chr7A gene sequences:
+
+`bedtools getfasta -fi RefSeqv1_chromosomes.fasta -bed RefSeqv1_chr7A-genes.gff > RefSeqv1_chr7A-genes.fasta`
+>the fasta headers will be in the form "chr7A:xxxxx-xxxxx" retaining coordinate information of gene on chr7A
+
+2. BLAST gene multifasta to Axminster 7A assembly
+```
+makeblastdb -in Axminster7A_contigs.fasta -dbtype nucl
+blastn -num_threads 8 -query RefSeqv1_chr7A-genes.fasta -db Axminster7A_contigs.fasta -outfmt 6 -out 7A-genes_vs_Ax7A-contigs.blastn.txt
+```
+
+3. Filter BLAST table by alignment length >=1000, sort by bit score, get top hit per query sequence using blast_filterV2 (TC-Hewitt/Misc_NGS)
+
+`python blast_filterV2.pyc -i 7A-genes_vs_Ax7A-contigs.blastn.txt -o 7A-genes_vs_Ax7A-contigs.filtered.txt -a 1000 -sort1 bscore -topq 1`
+
+4. Get bscore/kb for filtered hits and reorder by query gene position along RefSeq v1.0 chr7A using hspnormalize.py
+
+python hspnormalize.py -i 7A-genes_vs_Ax7A-contigs.filtered.txt -o 7A-genes_vs_Ax7A-contigs_scored.ordered.txt
+>coordinate information from fasta headers of query sequences in 1st column of BLAST table is used for ordering
+>the tabulated output has the following fields: query gene start, query alignment start, bit score, bit score/kb, subject seq ID
+
+5. columns 1 (x-axis) and 4 (y-axis) can be plotted to see change in BLAST strength along the reference chromosome 
