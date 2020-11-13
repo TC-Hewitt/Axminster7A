@@ -2,7 +2,7 @@
 
 ## Using a IWGSC reference gene matching my candidate contig to to pull out additional matches from my RenSeq WT assembly
 
-if you have a fragmented assembly and yout primary candidate is only a partial NLR, the rest of your missing sequence might still be floating around as a seperate contig that didn't get joined due to poor read coverage over the gap. If a homolog or ortholog exists in a reference assembly (such as IWGSC RefSeq v1.0), you may be able to use that to fish for additional contigs that may form part of your gene candidate.
+if you have a fragmented assembly and yout primary candidate is only a partial NLR, the rest of your missing sequence might still be floating around as a seperate contig that didn't get joined due to poor read coverage over the gap. If a homolog or ortholog exists in a reference assembly (such as IWGSC RefSeq v1.0), you may be able to use that to fish for additional contigs that may form part of your gene candidate (RefSeq v1.0 assembly and annotation can be found at https://wheat-urgi.versailles.inra.fr/Seq-Repository).
 
 1. using bedtools/2.29.2, the IWGSC v1.0 reference genome and accompanying RefSeq gene annotation file, extract all the annotated gene sequences to a fasta file (Make sure the gene identifier is in the 3rd column of the gff file):
 
@@ -43,12 +43,14 @@ blastn -num_threads 8 -query RefSeqv1_chr7A-genes.fasta -db Axminster7A_contigs.
 ```
 
 3. Filter BLAST table by alignment length >=1000, sort by bit score, get top hit per query sequence using blast_filterV2 (TC-Hewitt/Misc_NGS):
-
-`python blast_filterV2.pyc -i 7A-genes_vs_Ax7A-contigs.blastn.txt -o 7A-genes_vs_Ax7A-contigs.filtered.txt -a 1000 -sort1 bscore -topq 1`
+```
+python blast_filterV2.pyc -i 7A-genes_vs_Ax7A-contigs.blastn.txt -o 7A-genes_vs_Ax7A-contigs.filtered.txt -a 1000 -sort1 bscore -topq 1
+```
 
 4. Get bscore/kb for filtered hits and reorder by query gene position along RefSeq v1.0 chr7A using hspnormalize.py:
-
-`python hspnormalize.py -i 7A-genes_vs_Ax7A-contigs.filtered.txt -o 7A-genes_vs_Ax7A-contigs_scored.ordered.txt`
+```
+python hspnormalize.py -i 7A-genes_vs_Ax7A-contigs.filtered.txt -o 7A-genes_vs_Ax7A-contigs_scored.ordered.txt
+```
 >coordinate information from fasta headers of query sequences in 1st column of BLAST table is used for ordering, and the tabulated output has the following fields: query gene start, query alignment start, bit score, bit score/kb, subject seq ID
 
 5. columns 1 (x-axis) and 4 (y-axis) can be plotted to see change in BLAST strength along the reference chromosome 
@@ -76,5 +78,6 @@ From the dotplot of previous MashMap output, an approximate breakpoint could be 
 `awk '$8 >= 728000000' mashmap.out | grep Chr7A > mashmap_Chr7A.dist728mb.out`
 
 2. retrieve those contigs mapping after the breakpoint using get_contigs.py (TC-Hewitt/Misc_NGS):
-
-`python get_contigs.py -i all_contigs.fasta -o distal_mapping_contigs.fasta -t mashmap_Chr7A.dist728mb.out -s contig_`
+```
+python get_contigs.py -i all_contigs.fasta -o distal_mapping_contigs.fasta -t mashmap_Chr7A.dist728mb.out -s contig_
+```
